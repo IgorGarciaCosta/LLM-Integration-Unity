@@ -1,5 +1,4 @@
-﻿using NUnit.Compatibility;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using TMPro;
@@ -21,7 +20,9 @@ public class ChatManager: MonoBehaviour
     [SerializeField] private TMP_InputField inputField;      
     [SerializeField] private Button sendButton;               
     [SerializeField] private ScrollRect scrollRect;           
-    [SerializeField] private TMP_Text statusLabel;            // “digitando...” (optional)
+    [SerializeField] private TMP_Text statusLabel;            
+
+    private bool _waitingResponse;
 
 
     // Configs
@@ -38,7 +39,7 @@ public class ChatManager: MonoBehaviour
         if (string.IsNullOrEmpty(openAiApiKey))
             openAiApiKey = System.Environment.GetEnvironmentVariable("OPENAI_KEY");
 
-        _service = new OpenAIService(openAiApiKey);
+        _service = new OpenAIService(openAiApiKey.Trim());
 
         // calls handler from send button click
         sendButton.onClick.AddListener(HandleSend);
@@ -49,6 +50,8 @@ public class ChatManager: MonoBehaviour
     //Main send handler
     private void HandleSend()
     {
+        if (_waitingResponse) return;        // avoids flood
+
         string text = inputField.text.Trim();
         if (string.IsNullOrEmpty(text)) return;
 
@@ -70,9 +73,10 @@ public class ChatManager: MonoBehaviour
     //LLM connection async cycle
     private async Task ProcessBotResponseAsync()
     {
+        _waitingResponse = true;
         try
         {
-            statusLabel.text = "Typing...";
+            if (statusLabel != null) statusLabel.text = "Typing…";
             string answer = await _service.ChatAsync(_history);
 
             //saves in history
@@ -83,11 +87,12 @@ public class ChatManager: MonoBehaviour
         }
         catch(System.Exception e)
         {
-            CreateBubble($"⚠️ {e.Message}", isUser: false);
+            CreateBubble($"Error: {e.Message}", isUser: false);
         }
         finally
         {
-            statusLabel.text = "";
+            if (statusLabel != null) statusLabel.text = "";
+            _waitingResponse = false;
         }
     }
 
@@ -102,6 +107,7 @@ public class ChatManager: MonoBehaviour
 
         //auto scroll to end
         Canvas.ForceUpdateCanvases();
-        scrollRect.verticalNormalizedPosition = 0;
+        if (scrollRect != null)
+            scrollRect.verticalNormalizedPosition = 0;
     }
 }
