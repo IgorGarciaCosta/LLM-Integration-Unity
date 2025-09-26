@@ -1900,14 +1900,7 @@ MonoBehaviour:
   sendButton: {fileID: 227534439}
   scrollRect: {fileID: 149089164}
   statusLabel: {fileID: 1987341222}
-  openAiApiKey: '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
-
-    
-
-    
-
-    her
-    api key: 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'
+  openAiApiKey: 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
 --- !u!4 &1673947150
 Transform:
   m_ObjectHideFlags: 0

@@ -27,7 +27,7 @@ public class ChatManager: MonoBehaviour
 
     // Configs
     [Header("OpenAI Settings")]
-    [SerializeField] private string openAiApiKey = "";
+    [SerializeField] private string openAiApiKey = "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";
 
 
     private OpenAIService _service;
@@ -36,8 +36,10 @@ public class ChatManager: MonoBehaviour
     private void Awake()
     {
         //load environment variabe field if the one in the code is empty
-        if (string.IsNullOrEmpty(openAiApiKey))
-            openAiApiKey = System.Environment.GetEnvironmentVariable("OPENAI_KEY");
+        //if (string.IsNullOrEmpty(openAiApiKey))
+        //{
+        //    openAiApiKey = System.Environment.GetEnvironmentVariable("OPENAI_KEY");
+        //}
 
         _service = new OpenAIService(openAiApiKey.Trim());
 

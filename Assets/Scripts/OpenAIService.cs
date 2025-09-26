@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using UnityEditor;
-using UnityEditor.MPE;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -88,6 +86,8 @@ public sealed class OpenAIService
     //------------------------------------------------------------------
     private const string Endpoint = "https://api.openai.com/v1/chat/completions";
     private const string DefaultModel = "gpt-4o-mini";//cheaper model currently
+    [SerializeField] private string openAiProjectId = "proj_bywB3ulxCAXyjsMVTJH4lcja";
+    
 
     //------------------------------------------------------------------
     // Dependencies
@@ -97,11 +97,16 @@ public sealed class OpenAIService
     public OpenAIService(string apiKey)
     {
         if (string.IsNullOrWhiteSpace(apiKey))
-        {
             throw new ArgumentException("API key cannot be empty");
-        }
 
-        _apiKey = apiKey;
+        _apiKey = apiKey
+                    .Replace("\r", "")   // remove CR
+                    .Replace("\n", "")   // remove LF
+                    .Replace(" ", "")    // remove espaços internos
+                    .Trim();
+
+        // se ainda tiver “Bearer”, tira:
+        _apiKey = _apiKey.Replace("Bearer", "", StringComparison.OrdinalIgnoreCase);
     }
 
 
@@ -112,52 +117,83 @@ public sealed class OpenAIService
     /// <param name="history">Complete list of messages.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>AI response text.</returns>
+    /// <summary>
+    /// Envia o histórico para a OpenAI e devolve a resposta do modelo.
+    /// </summary>
     public async Task<string> ChatAsync(List<ChatMessageDto> history,
                                         CancellationToken ct = default)
     {
-        // 1) Monta o payload ------------------------------------------
+        //------------------------------------------------------------
+        // 1) Monta o payload JSON
+        //------------------------------------------------------------
         var requestBody = new OpenAIRequest(DefaultModel, history);
-
         string json = JsonUtility.ToJson(requestBody);
 
-        // 2) Setup UnityWebRequest -----------------------------------
+        //------------------------------------------------------------
+        // 2) Prepara o UnityWebRequest
+        //------------------------------------------------------------
         using var uwr = new UnityWebRequest(Endpoint, "POST");
-
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-        uwr.uploadHandler = new UploadHandlerRaw(bodyRaw);
+        uwr.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         uwr.downloadHandler = new DownloadHandlerBuffer();
 
+
+        //openAiProjectId = openAiProjectId
+        //            .Replace("\r", "")
+        //            .Replace("\n", "")
+        //            .Trim();
+
+        //string h1 = "Bearer " + _apiKey;
+        //DebugDump("AUTH", h1);
+        //string h2 = openAiProjectId;
+        //DebugDump("PROJ", h2);
+
+
+        // --- headers -------------------------------------------------
+        string auth = "Bearer " + _apiKey;
+        string proj = openAiProjectId;
+
+        Debug.Log($"[AUTH] {auth}");
+        Debug.Log($"[PROJ] {proj}");
+
         uwr.SetRequestHeader("Content-Type", "application/json");
-        uwr.SetRequestHeader("Authorization", "Bearer " + _apiKey);
+        uwr.SetRequestHeader("Authorization", auth);
+        uwr.SetRequestHeader("OpenAI-Project", proj);
 
-        // 3) FIres the request and waits ----------------------------
+        //------------------------------------------------------------
+        // 4) Dispara a requisição e aguarda
+        //------------------------------------------------------------
         var op = uwr.SendWebRequest();
-
-        // Converts AsyncOperation to Task to allow using wait
         while (!op.isDone)
         {
-            if (ct.IsCancellationRequested)     // calcels if theres an external cancelling request
+            if (ct.IsCancellationRequested)
             {
                 uwr.Abort();
                 ct.ThrowIfCancellationRequested();
             }
-            await Task.Yield();                 // Avoid freezing main thread
+            await Task.Yield();                        // evita travar a UI
         }
 
-        // 4)  HTTP erros handling-----------------------------------------
+        //------------------------------------------------------------
+        // 5) Trata erros HTTP
+        //------------------------------------------------------------
         if (uwr.result != UnityWebRequest.Result.Success)
-        {
-            throw new Exception($"Error OpenAI ({uwr.responseCode}): {uwr.error}");
-        }
+            throw new Exception($"Erro OpenAI ({uwr.responseCode}): {uwr.error}");
 
-        // 5) Unserialize response ------------------------------------
+        //------------------------------------------------------------
+        // 6) Desserializa resposta
+        //------------------------------------------------------------
         var response = JsonUtility.FromJson<OpenAIResponse>(uwr.downloadHandler.text);
-
-        // checks if renponse is valid
         if (response?.choices == null || response.choices.Length == 0)
             throw new Exception("Resposta vazia da OpenAI");
 
         return response.choices[0].message.content.Trim();
+    }
+
+
+    private static void DebugDump(string tag, string s)
+    {
+        var bytes = Encoding.UTF8.GetBytes(s);
+        Debug.Log($"[DUMP {tag}] len={bytes.Length} : {BitConverter.ToString(bytes)}");
     }
 
 
