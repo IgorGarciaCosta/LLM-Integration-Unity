@@ -8,6 +8,21 @@ using UnityEditor.MPE;
 using UnityEngine;
 using UnityEngine.Networking;
 
+
+/// <summary>
+/// Service responsible for encapsulating communication with the OpenAI API.
+/// </summary>
+/// <remarks>
+/// <para><b>Purpose:</b> Centralize the HTTP request logic.</para>
+/// <para><b>Benefits:</b></para>
+/// <list type="bullet">
+///   <item><description>Isolates the external dependency in a single place.</description></item>
+///   <item><description>Makes it easy to switch providers without impacting the UI.</description></item>
+///   <item><description>Enables simpler unit testing through mocking.</description></item>
+/// </list>
+/// </remarks>
+
+
 //SUMMARY
 //Structures that represents a message 
 //in the standard OpenAI Chat API pattern
