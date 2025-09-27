@@ -68,7 +68,7 @@ public class ChatManager: MonoBehaviour
         if (string.IsNullOrEmpty(text)) return;
 
         //creates user  text bubble
-        CreateBubble(text, isUser:true);
+        CreateBubble("User: " +text, isUser:true);
 
         //saves in history
         _history.Add(new ChatMessageDto("user", text));
@@ -95,7 +95,7 @@ public class ChatManager: MonoBehaviour
             _history.Add(new ChatMessageDto("assistant", answer));
 
             //creates UI message bubble
-            CreateBubble(answer, isUser: false);
+            CreateBubble("LLM: "+answer, isUser: false);
         }
         catch(System.Exception e)
         {

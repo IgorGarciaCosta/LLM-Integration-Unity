@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6528755400711736595, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_Name
-      value: BaseBubble
+      value: UserBubble
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_Pivot.x
