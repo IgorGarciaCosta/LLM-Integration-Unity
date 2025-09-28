@@ -79,7 +79,7 @@ public class Choice
 /// <summary>
 // Open AI API comminucation service
 /// </summary>
-public sealed class OpenAIService
+public sealed class OpenAIService:ILLMService
 {
     //------------------------------------------------------------------
     // Consts
@@ -88,10 +88,6 @@ public sealed class OpenAIService
     private const string DefaultModel = "gpt-4o-mini";//cheaper model currently
     [SerializeField] private string openAiProjectId = "proj_bywB3ulxCAXyjsMVTJH4lcja";
     
-
-    //------------------------------------------------------------------
-    // Dependencies
-    //------------------------------------------------------------------
     private readonly string _apiKey;
 
     public OpenAIService(string apiKey)
@@ -135,18 +131,6 @@ public sealed class OpenAIService
         using var uwr = new UnityWebRequest(Endpoint, "POST");
         uwr.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
         uwr.downloadHandler = new DownloadHandlerBuffer();
-
-
-        //openAiProjectId = openAiProjectId
-        //            .Replace("\r", "")
-        //            .Replace("\n", "")
-        //            .Trim();
-
-        //string h1 = "Bearer " + _apiKey;
-        //DebugDump("AUTH", h1);
-        //string h2 = openAiProjectId;
-        //DebugDump("PROJ", h2);
-
 
         // --- headers -------------------------------------------------
         string auth = "Bearer " + _apiKey;

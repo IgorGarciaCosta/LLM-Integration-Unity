@@ -20,49 +20,83 @@ public class ChatManager: MonoBehaviour
     [SerializeField] private TMP_InputField inputField;      
     [SerializeField] private Button sendButton;               
     [SerializeField] private ScrollRect scrollRect;           
-    [SerializeField] private TMP_Text statusLabel;            
+    [SerializeField] private TMP_Text statusLabel;
+    [SerializeField] private TMP_Dropdown providerDropdown;
 
     private bool _waitingResponse;
 
 
     // Configs
     [Header("OpenAI Settings")]
+    // Keys (via .env)
     private string openAiApiKey;
+    private string openAiProjectId;
+    private string geminiKey;
+    private string geminiModel;
 
 
-    private OpenAIService _service;
-    private readonly List<ChatMessageDto> _history = new();   //complete messages log
+    private ILLMService _service;
+    private OpenAIService _openAIService;
+    private GeminiService _geminiService;
+    private readonly List<ChatMessageDto> _history = new();   //complete messages history
 
     private void Awake()
     {
         // carrega .env
         EnvLoader.Load();
 
-        if (string.IsNullOrEmpty(openAiApiKey))
-        {
-            openAiApiKey = EnvLoader.Get("OPENAI_KEY");
-            Debug.Log("Key: " + openAiApiKey);
-        }
+        openAiApiKey = (EnvLoader.Get("OPENAI_KEY") ?? "").Trim();
+        openAiProjectId = (EnvLoader.Get("OPENAI_PROJECT_ID") ?? "").Trim();
+        geminiKey = (EnvLoader.Get("GEMINI_KEY") ?? "").Trim();
+        geminiModel = (EnvLoader.Get("GEMINI_MODEL") ?? "gemini-1.5-flash").Trim();
 
         if (string.IsNullOrEmpty(openAiApiKey))
-        {
-            Debug.LogError("OPENAI_KEY não encontrada!");
-        }
-
-        _service = new OpenAIService(openAiApiKey.Trim());
+            Debug.LogWarning("OPENAI_KEY ausente no .env");
+        if (string.IsNullOrEmpty(openAiProjectId))
+            Debug.LogWarning("OPENAI_PROJECT_ID ausente no .env");
+        if (string.IsNullOrEmpty(geminiKey))
+            Debug.LogWarning("GEMINI_KEY ausente no .env");
 
         if (statusLabel != null) statusLabel.text = "";//hide status label at the beginning
+
+        // Instancia serviços (apenas os que têm chave)
+        if (!string.IsNullOrEmpty(openAiApiKey))
+            _openAIService = new OpenAIService(openAiApiKey); // seu OpenAIService já usa o Project ID interno
+        if (!string.IsNullOrEmpty(geminiKey))
+            _geminiService = new GeminiService(geminiKey, geminiModel);
+
+        //Initial Provider
+        SetProvider(providerDropdown != null ? providerDropdown.value : 0);
+
 
         // calls handler from send button click
         sendButton.onClick.AddListener(HandleSend);
         inputField.onSubmit.AddListener(_ => HandleSend());
+        if(providerDropdown != null)
+        {
+            providerDropdown.onValueChanged.AddListener(SetProvider);
+        }
+    }
+
+    private void SetProvider(int index)
+    {
+        if (index == 1 && _geminiService != null)
+        {
+            _service = _geminiService;
+            Debug.Log("LLM atual: Gemini");
+        }
+        else
+        {
+            _service = _openAIService;
+            Debug.Log("LLM atual: OpenAI");
+        }
     }
 
 
     //Main send handler
     private void HandleSend()
     {
-        if (_waitingResponse) return;        // avoids flood
+        if (_waitingResponse || _service == null) return;        // avoids flood
 
         string text = inputField.text.Trim();
         if (string.IsNullOrEmpty(text)) return;
