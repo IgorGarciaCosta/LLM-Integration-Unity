@@ -22,6 +22,7 @@ public class ChatManager: MonoBehaviour
     [SerializeField] private ScrollRect scrollRect;           
     [SerializeField] private TMP_Text statusLabel;
     [SerializeField] private TMP_Dropdown providerDropdown;
+    [SerializeField] private GameObject notificationPopup;
 
     private bool _waitingResponse;
 
@@ -42,6 +43,8 @@ public class ChatManager: MonoBehaviour
 
     private void Awake()
     {
+        notificationPopup.SetActive(false);
+
         // carrega .env
         EnvLoader.Load();
 
@@ -50,12 +53,19 @@ public class ChatManager: MonoBehaviour
         geminiKey = (EnvLoader.Get("GEMINI_KEY") ?? "").Trim();
         geminiModel = (EnvLoader.Get("GEMINI_MODEL") ?? "gemini-1.5-flash").Trim();
 
-        if (string.IsNullOrEmpty(openAiApiKey))
-            Debug.LogWarning("OPENAI_KEY ausente no .env");
-        if (string.IsNullOrEmpty(openAiProjectId))
-            Debug.LogWarning("OPENAI_PROJECT_ID ausente no .env");
-        if (string.IsNullOrEmpty(geminiKey))
-            Debug.LogWarning("GEMINI_KEY ausente no .env");
+        if (string.IsNullOrEmpty(openAiApiKey) || string.IsNullOrEmpty(openAiProjectId))
+        {
+            Debug.LogWarning("OPENAI_KEY  or OPENAI_PROJECT_ID is not in .env");
+            if (string.IsNullOrEmpty(geminiKey))
+            {
+                Debug.LogWarning("GEMINI_KEY ausente no .env");
+                notificationPopup.SetActive(true);
+            }
+                
+        }
+            
+        
+       
 
         if (statusLabel != null) statusLabel.text = "";//hide status label at the beginning
 
