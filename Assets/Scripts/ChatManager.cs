@@ -41,6 +41,9 @@ public class ChatManager: MonoBehaviour
     private GeminiService _geminiService;
     private readonly List<ChatMessageDto> _history = new();   //complete messages history
 
+
+    private int OpenAIDropdownIndex = 0;
+    private int GeminiDropdownIndex = 1;
     private void Awake()
     {
         notificationPopup.SetActive(false);
@@ -48,24 +51,32 @@ public class ChatManager: MonoBehaviour
         // carrega .env
         EnvLoader.Load();
 
-        openAiApiKey = (EnvLoader.Get("OPENAI_KEY") ?? "").Trim();
-        openAiProjectId = (EnvLoader.Get("OPENAI_PROJECT_ID") ?? "").Trim();
-        geminiKey = (EnvLoader.Get("GEMINI_KEY") ?? "").Trim();
-        geminiModel = (EnvLoader.Get("GEMINI_MODEL") ?? "gemini-1.5-flash").Trim();
+        openAiApiKey = GetEnv("OPENAI_KEY");
+        openAiProjectId = GetEnv("OPENAI_PROJECT_ID");
+        geminiKey = GetEnv("GEMINI_KEY");
+        geminiModel = GetEnv("GEMINI_MODEL", "gemini-1.5-flash");
 
-        if (string.IsNullOrEmpty(openAiApiKey) || string.IsNullOrEmpty(openAiProjectId))
+        bool missingOpenAI = string.IsNullOrEmpty(openAiApiKey) || string.IsNullOrEmpty(openAiProjectId);
+        bool missingGemini = string.IsNullOrEmpty(geminiKey);
+
+        if (missingOpenAI)
         {
-            Debug.LogWarning("OPENAI_KEY  or OPENAI_PROJECT_ID is not in .env");
-            if (string.IsNullOrEmpty(geminiKey))
-            {
-                Debug.LogWarning("GEMINI_KEY ausente no .env");
-                notificationPopup.SetActive(true);
-            }
-                
+            Debug.LogWarning("OPENAI_KEY or OPENAI_PROJECT_ID inexistent on .env");
+            RemoveDropdownOption(providerDropdown, OpenAIDropdownIndex);
         }
-            
-        
-       
+
+        if (missingGemini)
+        {
+            Debug.LogWarning("GEMINI_KEY iexistent on .env");
+            RemoveDropdownOption(providerDropdown, GeminiDropdownIndex);
+        }
+
+        // Se nenhum provider estiver configurado, mostra popup
+        if (missingOpenAI && missingGemini)
+            notificationPopup.SetActive(true);
+
+
+
 
         if (statusLabel != null) statusLabel.text = "";//hide status label at the beginning
 
@@ -90,16 +101,33 @@ public class ChatManager: MonoBehaviour
 
     private void SetProvider(int index)
     {
-        if (index == 1 && _geminiService != null)
+        if (index == 0 && _geminiService != null)
         {
             _service = _geminiService;
-            Debug.Log("LLM atual: Gemini");
+            Debug.Log("LLM atual: ChatGPT");
         }
         else
         {
             _service = _openAIService;
-            Debug.Log("LLM atual: OpenAI");
+            Debug.Log("LLM atual: Gemini");
         }
+    }
+
+    private void RemoveDropdownOption(TMP_Dropdown dropdown, int index)
+    {
+        if (index < 0 || index >= dropdown.options.Count)
+        {
+            Debug.LogWarning($"Índice {index} inválido para remover opção do dropdown {dropdown.name}");
+            return;
+        }
+
+        dropdown.options.RemoveAt(index);
+        dropdown.RefreshShownValue();
+    }
+
+    private string GetEnv(string key, string fallback = "")
+    {
+        return (EnvLoader.Get(key) ?? fallback).Trim();
     }
 
 
