@@ -44,6 +44,8 @@ public class ChatManager: MonoBehaviour
 
     private int OpenAIDropdownIndex = 0;
     private int GeminiDropdownIndex = 1;
+
+    private string currentLLM = "Gemini";
     private void Awake()
     {
         notificationPopup.SetActive(false);
@@ -67,14 +69,13 @@ public class ChatManager: MonoBehaviour
 
         if (missingGemini)
         {
-            Debug.LogWarning("GEMINI_KEY iexistent on .env");
+            Debug.LogWarning("GEMINI_KEY inexistent on .env");
             RemoveDropdownOption(providerDropdown, GeminiDropdownIndex);
         }
 
         // Se nenhum provider estiver configurado, mostra popup
         if (missingOpenAI && missingGemini)
             notificationPopup.SetActive(true);
-
 
 
 
@@ -104,13 +105,14 @@ public class ChatManager: MonoBehaviour
         if (index == 0 && _geminiService != null)
         {
             _service = _geminiService;
-            Debug.Log("LLM atual: ChatGPT");
+            currentLLM = "Gemini";
         }
         else
         {
             _service = _openAIService;
-            Debug.Log("LLM atual: Gemini");
+            currentLLM = "ChatGPT";
         }
+        Debug.Log("Current LLM : " + currentLLM);
     }
 
     private void RemoveDropdownOption(TMP_Dropdown dropdown, int index)
@@ -167,7 +169,7 @@ public class ChatManager: MonoBehaviour
             _history.Add(new ChatMessageDto("assistant", answer));
 
             //creates UI message bubble
-            CreateBubble("LLM: "+answer, isUser: false);
+            CreateBubble(currentLLM + ": "+answer, isUser: false);
         }
         catch(System.Exception e)
         {
