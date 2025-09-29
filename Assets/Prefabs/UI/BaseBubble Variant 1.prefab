@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1001 &58441725032998277
+--- !u!1001 &3429826627753676694
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6528755400711736595, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_Name
-      value: UserBubble
+      value: BaseBubble
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_Pivot.x
@@ -22,27 +22,27 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0
+      value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 661.99
+      value: 179.54
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 212.22
+      value: 44.69
       objectReference: {fileID: 0}
     - target: {fileID: 7219775608329281671, guid: 93155a4f5e54cd4439fa88146fc6c5ba, type: 3}
       propertyPath: m_LocalPosition.x

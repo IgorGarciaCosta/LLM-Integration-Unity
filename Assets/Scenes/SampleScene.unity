@@ -523,11 +523,11 @@ MonoBehaviour:
   m_Content: {fileID: 199051171}
   m_Horizontal: 0
   m_Vertical: 1
-  m_MovementType: 1
+  m_MovementType: 2
   m_Elasticity: 0.1
-  m_Inertia: 1
+  m_Inertia: 0
   m_DecelerationRate: 0.135
-  m_ScrollSensitivity: 1
+  m_ScrollSensitivity: 30
   m_Viewport: {fileID: 1656498267}
   m_HorizontalScrollbar: {fileID: 0}
   m_VerticalScrollbar: {fileID: 1447761254}
@@ -690,7 +690,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: -1201.3, y: 0.000044937962}
-  m_SizeDelta: {x: 2402.6, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &199051172
 MonoBehaviour:
@@ -713,7 +713,7 @@ MonoBehaviour:
   m_Spacing: 100
   m_ChildForceExpandWidth: 1
   m_ChildForceExpandHeight: 1
-  m_ChildControlWidth: 0
+  m_ChildControlWidth: 1
   m_ChildControlHeight: 0
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
@@ -2852,8 +2852,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChatManager
   chatContent: {fileID: 199051171}
-  userBubblePrefab: {fileID: 6509227593360812182, guid: a94aadc074fa7be449ebf83fa76af4b1, type: 3}
-  botBubblePrefab: {fileID: 6938534605480580878, guid: 67c5fb2c460147a44a4e57f92af8c202, type: 3}
+  userBubblePrefab: {fileID: 3923844783383962919, guid: 3cea6d2f9e988214cb7bd102ca4353ef, type: 3}
+  botBubblePrefab: {fileID: 8431861479228637829, guid: 7a51ecf94ff5f1b40af657ce50221370, type: 3}
   inputField: {fileID: 1768981109}
   sendButton: {fileID: 227534439}
   scrollRect: {fileID: 149089164}
