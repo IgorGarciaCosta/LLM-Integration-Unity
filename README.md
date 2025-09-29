@@ -1,54 +1,67 @@
 # LLM-Integration-Unity
 
-A small project mad in Unity Engine with a chatbot integrated with an LLM
+A small project made with **Unity Engine** featuring a chatbot integrated with an **LLM**.
 
-🔑 Configuração da API Key
+---
 
-Este projeto utiliza a API da OpenAI, que requer uma chave de autenticação (OPENAI_KEY).
-Por motivos de segurança, nunca coloque sua chave diretamente no código.
+## 🔑 API Key Setup
 
-📂 1. Criar o arquivo .env
+This project uses **external APIs (OpenAI and Google Gemini)**, which require authentication keys.  
+For security reasons, **never hardcode your keys directly into the source code**.
 
-Na raiz do projeto, crie um arquivo chamado .env com o seguinte conteúdo:
+---
 
-OPENAI_KEY=sua_chave_aqui
+## 📂 1. Create the `.env` file
 
-⚠️ Substitua sua_chave_aqui pela sua chave real da OpenAI.
+In the **root folder** of the project, create a file named **`.env`** with the following content:
 
-🚫 2. Garantir que .env não seja versionado
+```env
+OPENAI_KEY=your_openai_key_here
+OPENAI_PROJECT_ID=your_openai_project_id_here
+GEMINI_KEY=your_gemini_key_here
+GEMINI_MODEL=gemini-2.5-flash
+⚠️ Important:
 
-O arquivo .env já está listado no .gitignore.
-Confira se ele contém a entrada abaixo:
+Replace your_openai_key_here, your_openai_project_id_here, and your_gemini_key_here with your real keys.
 
+The default Gemini model is gemini-2.5-flash, but you may change it if needed.
+
+🚫 2. Ensure .env is not versioned
+The .env file is already listed in .gitignore.
+Check that it contains the following entry:
+
+bash
+Copy code
 .env
+This prevents your API keys from being pushed to the remote repository.
 
-Assim, sua chave não será enviada para o repositório remoto.
+⚙️ 3. Load variables in Unity
+The project includes a simple .env loader.
+Inside the Awake() method of any script that requires the keys, use:
 
-⚙️ 3. Carregar variáveis no Unity
+csharp
+Copy code
+EnvLoader.Load(); // Loads the .env file
 
-O projeto já possui um carregador simples de .env.
-No Awake() dos scripts que precisam da chave, use:
-
-EnvLoader.Load(); // Carrega o arquivo .env
 var openAiApiKey = EnvLoader.Get("OPENAI_KEY");
+var openAiProjectId = EnvLoader.Get("OPENAI_PROJECT_ID");
+var geminiKey = EnvLoader.Get("GEMINI_KEY");
+var geminiModel = EnvLoader.Get("GEMINI_MODEL");
 
 if (string.IsNullOrEmpty(openAiApiKey))
 {
-Debug.LogError("OPENAI_KEY não encontrada! Configure o arquivo .env.");
+    Debug.LogError("OPENAI_KEY not found! Please configure the .env file.");
 }
 else
 {
-Debug.Log("OPENAI_KEY carregada com sucesso!");
+    Debug.Log("OPENAI_KEY successfully loaded!");
 }
+✅ Example workflow
+Create the .env file in the project root with your keys.
 
-✅ Exemplo de fluxo
+Start Unity.
 
-Criar .env com sua chave.
+The script automatically loads the keys via EnvLoader.
 
-Iniciar o Unity.
-
-O script vai carregar automaticamente a chave via EnvLoader.
-
-A chave estará disponível em openAiApiKey.
-
-🔥 Pronto! Agora sua chave da OpenAI está segura, configurável e fora do repositório.
+Access the variables anywhere using EnvLoader.Get("VARIABLE").
+```
