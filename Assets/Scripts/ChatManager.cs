@@ -197,7 +197,16 @@ public class ChatManager: MonoBehaviour
 
         // Usa Application.dataPath para a pasta Assets no Editor
         string basePath = Application.dataPath;
+        string filename = "chat_history.txt";
         string filePath = Path.Combine(basePath, "chat_history.txt");
+
+        int counter = 1;
+        while (File.Exists(filePath))
+        {
+            string tempFileName = $"{filename}({counter}).txt";
+            filePath = Path.Combine(basePath, tempFileName);
+            counter++;
+        }
 
         try
         {
