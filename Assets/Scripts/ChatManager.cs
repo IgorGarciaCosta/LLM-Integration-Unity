@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using System.IO;
 
 
 
@@ -186,7 +187,26 @@ public class ChatManager: MonoBehaviour
         }
     }
 
+    public void ExportHistoryToTxt()
+    {
+        if(_history==null || _history.Count == 0)
+        {
+            Debug.LogWarning("No chat history to export.");
+            return;
+        }
+        string filePath = Path.Combine(Application.persistentDataPath, "chat_history.txt");
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            foreach (var message in _history)
+            {
+                string line = $"[{message.role}]: {message.content}\n";
+                writer.Write(line);
+            }
+        }
 
+        Debug.Log($"Chat history exported to: {filePath}");
+        exportHistoryPopup.SetActive(true); // Mostra o popup de confirmação
+    }
 
     private void CreateBubble(string text, bool isUser)
     {
