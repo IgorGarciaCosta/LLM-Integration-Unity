@@ -26,6 +26,7 @@ public class ChatManager: MonoBehaviour
     [SerializeField] private TMP_Dropdown providerDropdown;
     [SerializeField] private GameObject notificationPopup;
     [SerializeField] private GameObject exportHistoryPopup;
+    [SerializeField] private ExportNotificationManager notifyManager;
 
 
     private bool _waitingResponse;
@@ -192,6 +193,7 @@ public class ChatManager: MonoBehaviour
         if (_history == null || _history.Count == 0)
         {
             Debug.LogWarning("No chat history to export.");
+            notifyManager.ShowNotification("No chat history to export.");
             return;
         }
 
@@ -218,13 +220,17 @@ public class ChatManager: MonoBehaviour
                     writer.Write(line);
                 }
             }
+            string msg = "Chat history successfully exported";
+            Debug.Log(msg);
+            notifyManager.ShowNotification(msg);
 
-            Debug.Log($"Chat history exported to: {filePath}");
-            
+
         }
         catch (Exception e)
         {
-            Debug.LogError($"Failed to export: {e.Message}");
+            string msg = "Failed to export";
+            Debug.Log(msg);
+            notifyManager.ShowNotification(msg);
         }
 
         exportHistoryPopup.SetActive(false);
