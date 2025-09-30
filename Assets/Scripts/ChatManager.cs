@@ -189,23 +189,36 @@ public class ChatManager: MonoBehaviour
 
     public void ExportHistoryToTxt()
     {
-        if(_history==null || _history.Count == 0)
+        if (_history == null || _history.Count == 0)
         {
             Debug.LogWarning("No chat history to export.");
             return;
         }
-        string filePath = Path.Combine(Application.persistentDataPath, "chat_history.txt");
-        using (StreamWriter writer = new StreamWriter(filePath))
+
+        // Usa Application.dataPath para a pasta Assets no Editor
+        string basePath = Application.dataPath;
+        string filePath = Path.Combine(basePath, "chat_history.txt");
+
+        try
         {
-            foreach (var message in _history)
+            using (StreamWriter writer = new StreamWriter(filePath))
             {
-                string line = $"[{message.role}]: {message.content}\n";
-                writer.Write(line);
+                foreach (var message in _history)
+                {
+                    string line = $"[{message.role}]: {message.content}\n";
+                    writer.Write(line);
+                }
             }
+
+            Debug.Log($"Chat history exported to: {filePath}");
+            
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Failed to export: {e.Message}");
         }
 
-        Debug.Log($"Chat history exported to: {filePath}");
-        exportHistoryPopup.SetActive(true); // Mostra o popup de confirmação
+        exportHistoryPopup.SetActive(false);
     }
 
     private void CreateBubble(string text, bool isUser)
