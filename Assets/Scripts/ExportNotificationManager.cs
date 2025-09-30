@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using TMPro;
 
 public class ExportNotificationManager : MonoBehaviour
 {
     [SerializeField] private GameObject notifyGameObj;
     [SerializeField] private float fadeDuration = 0.5f;
     [SerializeField] private float visibleDuration = 2f;
+    [SerializeField] private TMP_Text notifyText;
 
     private CanvasGroup canvasGroup;
     private Coroutine currentRoutine;
@@ -23,6 +25,7 @@ public class ExportNotificationManager : MonoBehaviour
             StopCoroutine(currentRoutine);
 
         notifyGameObj.SetActive(true);
+        notifyText.text = messageToShow;
         currentRoutine = StartCoroutine(FadeRoutine());
     }
 
