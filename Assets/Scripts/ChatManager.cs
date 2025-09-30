@@ -18,11 +18,14 @@ public class ChatManager: MonoBehaviour
     [SerializeField] private GameObject userBubblePrefab;     
     [SerializeField] private GameObject botBubblePrefab;      
     [SerializeField] private TMP_InputField inputField;      
-    [SerializeField] private Button sendButton;               
+    [SerializeField] private Button sendButton;
+    [SerializeField] private Button exportHistoryBtn;
     [SerializeField] private ScrollRect scrollRect;           
     [SerializeField] private TMP_Text statusLabel;
     [SerializeField] private TMP_Dropdown providerDropdown;
     [SerializeField] private GameObject notificationPopup;
+    [SerializeField] private GameObject exportHistoryPopup;
+
 
     private bool _waitingResponse;
 
@@ -49,6 +52,7 @@ public class ChatManager: MonoBehaviour
     private void Awake()
     {
         notificationPopup.SetActive(false);
+        exportHistoryPopup.SetActive(false);
 
         // carrega .env
         EnvLoader.Load();
