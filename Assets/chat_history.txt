@@ -1,2 +1,2 @@
-[user]: oi
-[assistant]: Oi! Tudo bem?
+﻿[user]: opa
+[assistant]: Opa! Tudo bem? 😄

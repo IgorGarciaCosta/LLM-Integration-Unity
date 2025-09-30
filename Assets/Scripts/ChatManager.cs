@@ -5,60 +5,80 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System.IO;
+using System.Text;
 
-
-
-//SUMMARY
-//Responsible for managing the chat  for the client
-//SUMMARY
-public class ChatManager: MonoBehaviour
+/// <summary>
+/// High-level chat coordinator for the client UI.
+/// - Owns references to UI widgets (input, buttons, scroll, labels).
+/// - Holds the chat history and forwards it to the selected LLM service.
+/// - Handles provider switching (OpenAI/Gemini) via dropdown.
+/// - Creates chat bubbles and auto-scrolls the ScrollRect.
+/// </summary>
+public class ChatManager : MonoBehaviour
 {
-    //  UI References (exposed on Inspector)
+    // ----------------------------
+    // UI References (assigned in Inspector)
+    // ----------------------------
     [Header("UI Elements")]
-    [SerializeField] private Transform chatContent;           
-    [SerializeField] private GameObject userBubblePrefab;     
-    [SerializeField] private GameObject botBubblePrefab;      
-    [SerializeField] private TMP_InputField inputField;      
-    [SerializeField] private Button sendButton;
-    [SerializeField] private Button exportHistoryBtn;
-    [SerializeField] private ScrollRect scrollRect;           
-    [SerializeField] private TMP_Text statusLabel;
-    [SerializeField] private TMP_Dropdown providerDropdown;
-    [SerializeField] private GameObject notificationPopup;
-    [SerializeField] private GameObject exportHistoryPopup;
-    [SerializeField] private ExportNotificationManager notifyManager;
+    [SerializeField] private Transform chatContent;            // Content container inside the ScrollRect
+    [SerializeField] private GameObject userBubblePrefab;      // Prefab for user message bubble
+    [SerializeField] private GameObject botBubblePrefab;       // Prefab for LLM message bubble
+    [SerializeField] private TMP_InputField inputField;        // User input field
+    [SerializeField] private Button sendButton;                // Send button
+    [SerializeField] private Button exportHistoryBtn;          // Button to export chat log
+    [SerializeField] private ScrollRect scrollRect;            // Scroll view
+    [SerializeField] private TMP_Text statusLabel;             // "Typing…" label
+    [SerializeField] private TMP_Dropdown providerDropdown;    // Provider selector (Gemini/OpenAI)
+    [SerializeField] private GameObject notificationPopup;     // Popup if no provider is configured
+    [SerializeField] private GameObject exportHistoryPopup;    // Popup for export flow
+    [SerializeField] private ExportNotificationManager notifyManager; // Small toast/notification manager
 
+    // ----------------------------
+    // State
+    // ----------------------------
+    private bool _waitingResponse;                             // Prevents spamming the service
 
-    private bool _waitingResponse;
-
-
-    // Configs
+    // ----------------------------
+    // Configuration (loaded from .env)
+    // ----------------------------
     [Header("OpenAI Settings")]
-    // Keys (via .env)
     private string openAiApiKey;
     private string openAiProjectId;
     private string geminiKey;
     private string geminiModel;
 
+    // ----------------------------
+    // Services
+    // ----------------------------
+    private ILLMService _service;          // Currently selected provider
+    private OpenAIService _openAIService;  // OpenAI implementation
+    private GeminiService _geminiService;  // Gemini implementation
 
-    private ILLMService _service;
-    private OpenAIService _openAIService;
-    private GeminiService _geminiService;
-    private readonly List<ChatMessageDto> _history = new();   //complete messages history
+    // Full chat history shared for the session
+    private readonly List<ChatMessageDto> _history = new();
 
-
+    // Dropdown indexes used when removing options dynamically
     private int OpenAIDropdownIndex = 0;
     private int GeminiDropdownIndex = 1;
 
+    // Label for the currently selected provider (for bubble prefix)
     private string currentLLM = "Gemini";
+
+    /// <summary>
+    /// MonoBehaviour initialization.
+    /// Loads environment variables, initializes services, wires UI events,
+    /// and selects the initial provider.
+    /// </summary>
     private void Awake()
     {
+        // Ensure popups start hidden
         notificationPopup.SetActive(false);
         exportHistoryPopup.SetActive(false);
 
-        // carrega .env
+        // Load .env at project root (see EnvLoader for details)
         EnvLoader.Load();
 
+        // Pull configuration from EnvLoader
         openAiApiKey = GetEnv("OPENAI_KEY");
         openAiProjectId = GetEnv("OPENAI_PROJECT_ID");
         geminiKey = GetEnv("GEMINI_KEY");
@@ -67,6 +87,7 @@ public class ChatManager: MonoBehaviour
         bool missingOpenAI = string.IsNullOrEmpty(openAiApiKey) || string.IsNullOrEmpty(openAiProjectId);
         bool missingGemini = string.IsNullOrEmpty(geminiKey);
 
+        // If a provider is not configured, remove it from the dropdown
         if (missingOpenAI)
         {
             Debug.LogWarning("OPENAI_KEY or OPENAI_PROJECT_ID inexistent on .env");
@@ -79,48 +100,53 @@ public class ChatManager: MonoBehaviour
             RemoveDropdownOption(providerDropdown, GeminiDropdownIndex);
         }
 
-        // Se nenhum provider estiver configurado, mostra popup
+        // If none are configured, show a notification popup
         if (missingOpenAI && missingGemini)
             notificationPopup.SetActive(true);
 
+        if (statusLabel != null) statusLabel.text = ""; // Hide typing label initially
 
-
-        if (statusLabel != null) statusLabel.text = "";//hide status label at the beginning
-
-        // Instancia serviços (apenas os que têm chave)
+        // Instantiate providers only if keys are available
         if (!string.IsNullOrEmpty(openAiApiKey))
-            _openAIService = new OpenAIService(openAiApiKey); // seu OpenAIService já usa o Project ID interno
+            _openAIService = new OpenAIService(openAiApiKey, openAiProjectId);
+
         if (!string.IsNullOrEmpty(geminiKey))
             _geminiService = new GeminiService(geminiKey, geminiModel);
 
-        //Initial Provider
+        // Select initial provider (based on current dropdown value, or 0 if null)
         SetProvider(providerDropdown != null ? providerDropdown.value : 0);
 
-
-        // calls handler from send button click
+        // Wire UI events
         sendButton.onClick.AddListener(HandleSend);
         inputField.onSubmit.AddListener(_ => HandleSend());
-        if(providerDropdown != null)
-        {
+        if (providerDropdown != null)
             providerDropdown.onValueChanged.AddListener(SetProvider);
-        }
     }
 
+    /// <summary>
+    /// Switches the current LLM provider based on dropdown index.
+    /// 0 = Gemini, 1 = OpenAI (as configured in the scene).
+    /// </summary>
     private void SetProvider(int index)
     {
-        if (index == 0 && _geminiService != null)
+        switch (index)
         {
-            _service = _geminiService;
-            currentLLM = "Gemini";
+            case 0: // Gemini
+                if (_geminiService != null) { _service = _geminiService; currentLLM = "Gemini"; }
+                else notifyManager.ShowNotification("Gemini indisponível (GEMINI_KEY ausente).");
+                break;
+
+            case 1: // OpenAI
+                if (_openAIService != null) { _service = _openAIService; currentLLM = "ChatGPT"; }
+                else notifyManager.ShowNotification("OpenAI indisponível (OPENAI_KEY/PROJECT_ID ausentes).");
+                break;
         }
-        else
-        {
-            _service = _openAIService;
-            currentLLM = "ChatGPT";
-        }
-        Debug.Log("Current LLM : " + currentLLM);
+        Debug.Log("Current LLM: " + currentLLM);
     }
 
+    /// <summary>
+    /// Safely removes a dropdown option by index (used when a provider is missing).
+    /// </summary>
     private void RemoveDropdownOption(TMP_Dropdown dropdown, int index)
     {
         if (index < 0 || index >= dropdown.options.Count)
@@ -133,52 +159,63 @@ public class ChatManager: MonoBehaviour
         dropdown.RefreshShownValue();
     }
 
+    /// <summary>
+    /// Helper to read environment variables with a default fallback.
+    /// </summary>
     private string GetEnv(string key, string fallback = "")
     {
         return (EnvLoader.Get(key) ?? fallback).Trim();
     }
 
-
-    //Main send handler
+    /// <summary>
+    /// Main send handler: validates input, creates user bubble,
+    /// appends to history, clears the input, and triggers async request.
+    /// </summary>
     private void HandleSend()
     {
-        if (_waitingResponse || _service == null) return;        // avoids flood
+        // Avoid spamming or sending while no provider is selected
+        if (_waitingResponse || _service == null) return;
 
         string text = inputField.text.Trim();
         if (string.IsNullOrEmpty(text)) return;
 
-        //creates user  text bubble
-        CreateBubble("User: " +text, isUser:true);
+        // Create user bubble
+        CreateBubble("User: " + text, isUser: true);
 
-        //saves in history
+        // Add to in-memory history
         _history.Add(new ChatMessageDto("user", text));
 
-        //clear field
+        // Clear input and keep focus
         inputField.text = "";
-        inputField.ActivateInputField();//add focus
+        inputField.ActivateInputField();
 
-        //fires request to LLM
+        // Fire async round-trip to the current provider
         _ = ProcessBotResponseAsync();
     }
 
-
-    //LLM connection async cycle
+    /// <summary>
+    /// Orchestrates the async call to the provider, updates UI and history,
+    /// and ensures the state flags/labels are restored in finally.
+    /// </summary>
     private async Task ProcessBotResponseAsync()
     {
         _waitingResponse = true;
         try
         {
             if (statusLabel != null) statusLabel.text = "Typing…";
+
+            // Ask the selected provider using the full history
             string answer = await _service.ChatAsync(_history);
 
-            //saves in history
+            // Append provider message to history
             _history.Add(new ChatMessageDto("assistant", answer));
 
-            //creates UI message bubble
-            CreateBubble(currentLLM + ": "+answer, isUser: false);
+            // Show provider bubble
+            CreateBubble(currentLLM + ": " + answer, isUser: false);
         }
-        catch(System.Exception e)
+        catch (System.Exception e)
         {
+            // Show error in a bubble (keeps UI feedback consistent)
             CreateBubble($"Error: {e.Message}", isUser: false);
         }
         finally
@@ -188,62 +225,72 @@ public class ChatManager: MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// Exports the current chat history to a .txt file.
+    /// Uses Assets folder in Editor and persistentDataPath in builds.
+    /// </summary>
     public void ExportHistoryToTxt()
     {
-        if (_history == null || _history.Count == 0)
+        var history = _history;
+        if (history == null || history.Count == 0)
         {
-            Debug.LogWarning("No chat history to export.");
             notifyManager.ShowNotification("No chat history to export.");
             return;
         }
 
-        // Usa Application.dataPath para a pasta Assets no Editor
-        string basePath = Application.dataPath;
-        string filename = "chat_history.txt";
-        string filePath = Path.Combine(basePath, "chat_history.txt");
+        // Choose base path depending on environment
+        string basePath = Application.isEditor ? Application.dataPath : Application.persistentDataPath;
+        Directory.CreateDirectory(basePath);
 
-        int counter = 1;
+        // Create a unique filename
+        string nameNoExt = "chat_history";
+        string ext = ".txt";
+        string filePath = Path.Combine(basePath, nameNoExt + ext);
+
+        int i = 1;
         while (File.Exists(filePath))
         {
-            string tempFileName = $"{filename}({counter}).txt";
-            filePath = Path.Combine(basePath, tempFileName);
-            counter++;
+            filePath = Path.Combine(basePath, $"{nameNoExt}({i}){ext}");
+            i++;
         }
 
+        // Write the log
         try
         {
-            using (StreamWriter writer = new StreamWriter(filePath))
-            {
-                foreach (var message in _history)
-                {
-                    string line = $"[{message.role}]: {message.content}\n";
-                    writer.Write(line);
-                }
-            }
-            string msg = "Chat history successfully exported";
-            Debug.Log(msg);
-            notifyManager.ShowNotification(msg);
+            using var writer = new StreamWriter(filePath, false, Encoding.UTF8);
+            foreach (var m in history)
+                writer.WriteLine($"[{m.role}]: {m.content}");
 
-
+            notifyManager.ShowNotification("Chat history successfully exported");
+            Debug.Log($"Exported to: {filePath}");
         }
         catch (Exception e)
         {
-            string msg = "Failed to export";
-            Debug.Log(msg);
-            notifyManager.ShowNotification(msg);
+            Debug.LogError($"Failed to export: {e}");
+            notifyManager.ShowNotification("Failed to export");
         }
 
         exportHistoryPopup.SetActive(false);
     }
 
+    /// <summary>
+    /// Instantiates the proper bubble prefab, assigns text, rebuilds the layout
+    /// so the ContentSizeFitters/Layouts update immediately, and auto-scrolls down.
+    /// </summary>
     private void CreateBubble(string text, bool isUser)
     {
-        var prefab = isUser? userBubblePrefab : botBubblePrefab;
+        var prefab = isUser ? userBubblePrefab : botBubblePrefab;
         var go = Instantiate(prefab, chatContent);
+
+        // Assign message text
         go.GetComponentInChildren<TMP_Text>().text = text;
 
+        // Force layout calculations right away to avoid visual "pop" or clipping
+        var rtBubble = go.GetComponent<RectTransform>();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(rtBubble);
+        LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)chatContent);
 
-        //auto scroll to end
+        // Auto-scroll to the end
         Canvas.ForceUpdateCanvases();
         if (scrollRect != null)
             scrollRect.verticalNormalizedPosition = 0;
